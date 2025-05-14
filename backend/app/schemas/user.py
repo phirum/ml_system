@@ -5,12 +5,15 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     full_name: str
+    role: str = "user"  # or 'admin', 'analyst', etc.
+    username: str
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    identifier: str  # can be email or username
     password: str
 
 class UserOut(BaseModel):
     email: EmailStr
+    username: str
     full_name: str
     role: str

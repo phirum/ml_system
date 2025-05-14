@@ -10,11 +10,15 @@ db = client["malware_analysis"]
 users_collection = db["users"]
 
 async def register_user(user: UserCreate):
-    existing = await users_collection.find_one({"email": user.email})
+    existing = await users_collection.find_one({
+        "$or": [{"email": user.email}, {"username": user.username}]
+    })
     if existing:
         return None
+
     user_dict = {
         "email": user.email,
+        "username": user.username,
         "hashed_password": hash_password(user.password),
         "full_name": user.full_name,
         "role": "user"
@@ -23,9 +27,12 @@ async def register_user(user: UserCreate):
     return user_dict
 
 async def authenticate_user(user: UserLogin):
-    db_user = await users_collection.find_one({"email": user.email})
+    db_user = await users_collection.find_one({
+        "$or": [{"email": user.identifier}, {"username": user.identifier}]
+    })
     if not db_user:
         return None
     if not verify_password(user.password, db_user["hashed_password"]):
         return None
     return db_user
+
