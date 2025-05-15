@@ -1,22 +1,32 @@
-from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
-from datetime import datetime
+from pydantic import BaseModel, EmailStr
+from typing import Literal, Optional
+
 
 class UserBase(BaseModel):
     email: EmailStr
+    username: Optional[str] = None
     full_name: Optional[str] = None
-    role: str = "user"  # or 'admin', 'analyst', etc.
+    role: Literal["admin", "user"]
+    status: Optional[str] = "active"
+
 
 class UserCreate(UserBase):
     password: str
 
-class UserInDB(UserBase):
-    id: str
-    hashed_password: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    is_active: bool = True
 
 class UserUpdate(BaseModel):
+    email: Optional[EmailStr] = None
+    username: Optional[str] = None
     full_name: Optional[str] = None
-    role: Optional[str] = None
-    is_active: Optional[bool] = None
+    role: Optional[Literal["admin", "user"]] = None
+    status: Optional[str] = None
+
+
+
+class UserOut(UserBase):
+    id: str
+
+
+class UserInDB(UserBase):
+    id: Optional[str]
+    hashed_password: str
