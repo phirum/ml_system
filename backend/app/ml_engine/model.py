@@ -1,19 +1,25 @@
 # app/ml_engine/model.py
-import os
 import joblib
-import numpy as np
-from sklearn.feature_extraction.text import TfidfVectorizer
+import pandas as pd
+import os
+from app.ml_engine.extractor import extract_features_from_text
 
-MODEL_PATH = "app/ml_engine/model.joblib"
-VECTORIZER_PATH = "app/ml_engine/vectorizer.joblib"
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "model.joblib")
 
-# Load model & vectorizer
-model = joblib.load(MODEL_PATH)
-vectorizer = joblib.load(VECTORIZER_PATH)
+model = None
+expected_features = None
 
-def predict_text(text: str):
-    features = vectorizer.transform([text])
-    prediction = model.predict(features)[0]
-    proba = model.predict_proba(features)[0]
-    confidence = round(np.max(proba), 2)
-    return prediction, confidence
+def load_model():
+    global model, expected_features
+    if model is None or expected_features is None:
+        model_data = joblib.load(MODEL_PATH)
+        model = model_data["model"]
+        expected_features = model_data["feature_names"]
+
+def predict_text(raw_text: str):
+    load_model()
+    features = extract_features_from_text(raw_text)
+    df = pd.DataFrame([features])[expected_features]
+    label = model.predict(df)[0]
+    confidence = max(model.predict_proba(df)[0])
+    return label, confidence

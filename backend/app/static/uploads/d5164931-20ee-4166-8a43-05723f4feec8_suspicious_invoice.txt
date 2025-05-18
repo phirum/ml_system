@@ -1,0 +1,8 @@
+Invoice No: INV-2024-014
+Amount: $3,450.00
+Due Date: 2024-10-30
+
+Pay immediately at:
+http://secure-update-payment.verify-login.com
+
+Note: This invoice is overdue. Click the link to confirm payment.
