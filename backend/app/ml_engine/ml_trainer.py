@@ -9,13 +9,15 @@ from sklearn.metrics import classification_report
 
 def train_from_csv(file_path: str) -> dict:
     df = pd.read_csv(file_path)
-    print("Loaded dataset from csv to train:", df.shape)
+    print("Loaded dataset:", df.shape)
 
     if "Label" not in df.columns:
         raise ValueError("Dataset must contain a 'Label' column.")
 
-    df = df[df["Label"].isin(["BENIGN", "MALICIOUS"])]
+    # Optional: Drop rows with missing or null labels
+    df = df.dropna(subset=["Label"])
 
+    # Features and target
     X = df.drop(columns=["Label"])
     y = df["Label"]
 
@@ -32,13 +34,14 @@ def train_from_csv(file_path: str) -> dict:
     model_path = os.path.join(os.path.dirname(__file__), "model.joblib")
     joblib.dump({
         "model": model,
-        "feature_names": list(X.columns)
+        "feature_names": list(X.columns),
+        "classes": model.classes_.tolist()  # Save the label classes
     }, model_path)
 
     metrics = {
         "accuracy": report["accuracy"],
-        "malicious_f1": report.get("MALICIOUS", {}).get("f1-score", 0.0),
-        "benign_f1": report.get("BENIGN", {}).get("f1-score", 0.0)
+        "macro_f1": report["macro avg"]["f1-score"],
+        "weighted_f1": report["weighted avg"]["f1-score"]
     }
 
     return {"metrics": metrics}

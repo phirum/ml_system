@@ -1,8 +1,8 @@
+# app/api/endpoints/model.py
 from fastapi import APIRouter, File, UploadFile, Depends, HTTPException
-from motor.motor_asyncio import AsyncIOMotorDatabase
 import shutil
 import os
-from typing import List
+from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.api.deps import require_admin
 from app.ml_engine.ml_trainer import train_from_csv
@@ -20,7 +20,7 @@ async def retrain_model(
 ):
     try:
         print("Received file for retraining:", file.filename)
-
+        
         if not file.filename.endswith(".csv"):
             raise HTTPException(status_code=400, detail="Only CSV files allowed.")
 
@@ -34,24 +34,31 @@ async def retrain_model(
     finally:
         os.remove(temp_path)
 
+    metrics = result["metrics"]
+    f1_scores = metrics.get("f1_scores", {})
+
     retrain_log = RetrainLog(
         admin_id=admin_user["id"],
         admin_email=admin_user["email"],
         dataset_filename=file.filename,
-        accuracy=result["metrics"]["accuracy"],
-        f1_malicious=result["metrics"]["malicious_f1"],
-        f1_benign=result["metrics"]["benign_f1"],
+        accuracy=metrics.get("accuracy", 0.0),
+        f1_malicious=f1_scores.get("MALICIOUS", 0.0),
+        f1_benign=f1_scores.get("BENIGN", 0.0),
         model_version="v1.0"
     )
     await log_retrain_event(db, retrain_log)
 
-    return {"message": "Model retrained", "metrics": result["metrics"]}
+    return {
+        "message": "Model retrained successfully",
+        "metrics": metrics
+    }
 
 
-@router.get("/retrain/logs", response_model=List[RetrainLog], summary="Get retraining log history", tags=["Model"])
-async def fetch_retrain_logs(
-    db: AsyncIOMotorDatabase = Depends(get_database),
-    admin_user: dict = Depends(require_admin)
+# ✅ NEW: Fetch all retrain logs
+@router.get("/retrain/logs", summary="Get model retraining logs", tags=["Model"])
+async def get_retrain_logs(
+    admin_user: dict = Depends(require_admin),
+    db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     logs = await get_all_retrain_logs(db)
     return logs
